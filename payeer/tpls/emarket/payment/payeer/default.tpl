@@ -13,11 +13,7 @@ $FORMS['form_block'] = <<<END
 	<input type="hidden" name="m_sign" value="%payeer_sign%" />
 
 	<p>
-		Click "Pay" to go to the website of the payment system <strong>Payeer</strong>.
-	</p>        
-
-	<p>
-		<input type="submit" name="m_process" value="Pay" class="button big" />
+		Нажмите кнопку "Оплатить" для перехода на сайт платежной системы <strong>Payeer</strong>.
 	</p>
 </form>
 END;
