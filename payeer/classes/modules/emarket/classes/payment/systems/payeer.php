@@ -1,4 +1,4 @@
-<?
+<?php
 class payeerPayment extends payment 
 {
 	public function validate()
