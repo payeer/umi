@@ -37,37 +37,31 @@ mysql_query("INSERT INTO `cms3_fields_controller` VALUES(5, @payment_type_id, @f
 mysql_query("INSERT INTO `cms3_object_field_groups` VALUES(NULL, 'settings', 'Параметры', @obj_type, 1, 1, 10, 0)");
 mysql_query("SET @field_group = LAST_INSERT_ID()");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_url', 'URL мерчанта (укажите //payeer.com/merchant/)', 0, 13, 0, 1, NULL, 0, 0, 'url для оплаты в системе Payeer', 1, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_url', 'URL мерчанта (укажите https://payeer.com/merchant/)', 0, 13, 0, 1, NULL, 0, 0, 'url для оплаты в системе Payeer', 1, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (15, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_shop', 'Идентификатор магазина', 0, 13, 0, 1, NULL, 0, 0, 'Идентификатор магазина, зарегистрированного в системе PAYEER. Узнать его можно в аккаунте Payeer: Аккаунт -> Мой магазин -> Изменить.', 1, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_shop', 'Идентификатор магазина', 0, 13, 0, 1, NULL, 0, 0, 'Идентификатор магазина, зарегистрированного в Payeer.', 1, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (20, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_key', 'Секретный ключ', 0, 13, 0, 1, NULL, 0, 0, 'Секретный ключ оповещения о выполнении платежа, который используется для проверки целостности полученной информации и однозначной идентификации отправителя. Должен совпадать с секретным ключем, указанным в аккаунте Payeer: Аккаунт -> Мой магазин -> Изменить.', 1, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_key', 'Секретный ключ', 0, 13, 0, 1, NULL, 0, 0, 'Секретный ключ магазина', 1, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (25, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_orderdesc', 'Комментарий к оплате', 0, 13, 0, 1, NULL, 0, 0, 'Пояснение оплаты заказа', 0, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_log', 'Путь до журнала платежных операций (например, /payeer_orders.log)', 0, 13, 0, 1, NULL, 0, 0, 'Если путь не указан, то журнал не записывается', 0, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (30, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_log', 'Путь до файла для журнала оплат через Payeer (например, /payeer_orders.log)', 0, 13, 0, 1, NULL, 0, 0, 'Если путь не указан, то журнал не записывается', 0, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_ipfilter', 'IP фильтр', 0, 13, 0, 1, NULL, 0, 0, 'Список доверенных ip адресов, можно указать маску', 0, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (35, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_ipfilter', 'IP фильтр', 0, 13, 0, 1, NULL, 0, 0, 'Список доверенных ip адресов, можно указать маску', 0, NULL, 0, 0)");
+mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_emailerr', 'Email для ошибок', 0, 13, 0, 1, NULL, 0, 0, 'Электронная почта для отчетов об ошибках оплаты', 1, NULL, 0, 0)");
 mysql_query("SET @field = LAST_INSERT_ID()");
 mysql_query("INSERT INTO `cms3_fields_controller` VALUES (40, @field, @field_group)");
 
-mysql_query("INSERT INTO `cms3_object_fields` VALUES(NULL, 'payeer_emailerr', 'Email для ошибок', 0, 13, 0, 1, NULL, 0, 0, 'Электронная почта для отчетов об ошибках оплаты', 1, NULL, 0, 0)");
-mysql_query("SET @field = LAST_INSERT_ID()");
-mysql_query("INSERT INTO `cms3_fields_controller` VALUES (45, @field, @field_group)");
-
-
-
-echo "<center><b>Установка платежного модуля Payeer для CMS UMI заверешена!</b></center>";
+echo "<center><b>Установка платежного модуля Payeer заверешена!</b></center>";
 
 echo '
 <script type="text/javascript">

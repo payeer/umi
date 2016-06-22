@@ -18,11 +18,11 @@ class payeerPayment extends payment
 		$param = array();
 		$param['payeer_url'] 	= $this->object->payeer_url;
 		$param['payeer_shop'] 	= $this->object->payeer_shop;
-		$param['payeer_orderid']= $this->order->getId();
+		$param['payeer_orderid'] = $this->order->getId();
 		$param['payeer_amount'] = number_format($this->order->getActualPrice(), 2, '.', '');
-		$param['payeer_desc']	= base64_encode($this->object->payeer_orderdesc);
+		$param['payeer_desc']	= base64_encode('Оплата заказа №' . $param['payeer_orderid']);
 		
-		$m_curr = strtoupper( mainConfiguration::getInstance()->get('system', 'default-currency') );
+		$m_curr = strtoupper(mainConfiguration::getInstance()->get('system', 'default-currency'));
 		
 		$param['payeer_curr'] = ($m_curr == 'RUR' ? 'RUB' : $m_curr);
 		
@@ -61,122 +61,148 @@ class payeerPayment extends payment
     public function poll() 
 	{
 		$buffer = outputBuffer::current();
-	  
 		$buffer->clear();
-	  
 		$buffer->contentType("text/plain");
+		$m_operation_id = getRequest('m_operation_id');
+		$m_sign = getRequest('m_sign');
 		
-		if (isset($_POST["m_operation_id"]) && isset($_POST["m_sign"]))
+		if (isset($m_operation_id) && isset($m_sign))
 		{
-			$m_key = $this->object->payeer_key;
+			$err = false;
+			$message = '';
 			
-			$arHash = array($_POST['m_operation_id'],
-					$_POST['m_operation_ps'],
-					$_POST['m_operation_date'],
-					$_POST['m_operation_pay_date'],
-					$_POST['m_shop'],
-					$_POST['m_orderid'],
-					$_POST['m_amount'],
-					$_POST['m_curr'],
-					$_POST['m_desc'],
-					$_POST['m_status'],
-					$m_key);
-					
-			$sign_hash = strtoupper(hash('sha256', implode(":", $arHash)));
+			// запись логов
 			
-			// проверка принадлежности ip списку доверенных ip
+			$log_text = 
+				"--------------------------------------------------------\n" .
+				"operation id		" . getRequest('m_operation_id') . "\n" .
+				"operation ps		" . getRequest('m_operation_ps') . "\n" .
+				"operation date		" . getRequest('m_operation_date') . "\n" .
+				"operation pay date	" . getRequest('m_operation_pay_date') . "\n" .
+				"shop				" . getRequest('m_shop') . "\n" .
+				"order id			" . getRequest('m_orderid') . "\n" .
+				"amount				" . getRequest('m_amount') . "\n" .
+				"currency			" . getRequest('m_curr') . "\n" .
+				"description		" . base64_decode(getRequest('m_desc')) . "\n" .
+				"status				" . getRequest('m_status') . "\n" .
+				"sign				" . getRequest('m_sign') . "\n\n";
 			
-			$list_ip_str = str_replace(' ', '', $this->object->payeer_ipfilter);
+			$log_file = $this->object->payeer_log;
 			
-			if (!empty($list_ip_str)) 
+			if (!empty($log_file))
 			{
-				$list_ip = explode(',', $list_ip_str);
-				$this_ip = $_SERVER['REMOTE_ADDR'];
-				$this_ip_field = explode('.', $this_ip);
-				$list_ip_field = array();
-				$i = 0;
-				$valid_ip = FALSE;
-				foreach ($list_ip as $ip)
+				file_put_contents($_SERVER['DOCUMENT_ROOT'] . $log_file, $log_text, FILE_APPEND);
+			}
+			
+			// проверка цифровой подписи и ip
+
+			$sign_hash = strtoupper(hash('sha256', implode(":", array(
+				getRequest('m_operation_id'),
+				getRequest('m_operation_ps'),
+				getRequest('m_operation_date'),
+				getRequest('m_operation_pay_date'),
+				getRequest('m_shop'),
+				getRequest('m_orderid'),
+				getRequest('m_amount'),
+				getRequest('m_curr'),
+				getRequest('m_desc'),
+				getRequest('m_status'),
+				$this->object->payeer_key
+			))));
+			
+			$valid_ip = true;
+			$sIP = str_replace(' ', '', $this->object->payeer_ipfilter);
+			
+			if (!empty($sIP))
+			{
+				$arrIP = explode('.', $_SERVER['REMOTE_ADDR']);
+				if (!preg_match('/(^|,)(' . $arrIP[0] . '|\*{1})(\.)' .
+				'(' . $arrIP[1] . '|\*{1})(\.)' .
+				'(' . $arrIP[2] . '|\*{1})(\.)' .
+				'(' . $arrIP[3] . '|\*{1})($|,)/', $sIP))
 				{
-					$ip_field[$i] = explode('.', $ip);
-					if ((($this_ip_field[0] ==  $ip_field[$i][0]) or ($ip_field[$i][0] == '*')) and
-						(($this_ip_field[1] ==  $ip_field[$i][1]) or ($ip_field[$i][1] == '*')) and
-						(($this_ip_field[2] ==  $ip_field[$i][2]) or ($ip_field[$i][2] == '*')) and
-						(($this_ip_field[3] ==  $ip_field[$i][3]) or ($ip_field[$i][3] == '*')))
-						{
-							$valid_ip = TRUE;
-							break;
-						}
-					$i++;
+					$valid_ip = false;
 				}
 			}
-			else
+			
+			if (!$valid_ip)
 			{
-				$valid_ip = TRUE;
+				$message .= " - ip-адрес сервера не является доверенным\n" .
+				"   доверенные ip: " . $sIP . "\n" .
+				"   ip текущего сервера: " . $_SERVER['REMOTE_ADDR'] . "\n";
+				$err = true;
 			}
-		
-			$log_text = 
-				"--------------------------------------------------------\n".
-				"operation id		" . $_POST["m_operation_id"] . "\n".
-				"operation ps		" . $_POST["m_operation_ps"] . "\n".
-				"operation date		" . $_POST["m_operation_date"] . "\n".
-				"operation pay date	" . $_POST["m_operation_pay_date"] . "\n".
-				"shop				" . $_POST["m_shop"] . "\n".
-				"order id			" . $_POST["m_orderid"] . "\n".
-				"amount				" . $_POST["m_amount"] . "\n".
-				"currency			" . $_POST["m_curr"] . "\n".
-				"description		" . base64_decode($_POST["m_desc"]) . "\n".
-				"status				" . $_POST["m_status"] . "\n".
-				"sign				" . $_POST["m_sign"] . "\n\n";
 
-			if (!empty($this->object->payeer_log))
+			if (getRequest('m_sign') != $sign_hash)
 			{
-				file_put_contents($_SERVER['DOCUMENT_ROOT'] . $this->object->payeer_log, $log_text, FILE_APPEND);
+				$message .= " - Не совпадают цифровые подписи\n";
+				$err = true;
 			}
 			
-			if ($_POST["m_sign"] == $sign_hash && $_POST['m_status'] == "success" && $valid_ip)
+			if (!$err)
 			{
-				$this->order->setPaymentStatus('accepted');
+				// загрузка заказа
 				
-				$this->order->payment_document_num = $_POST['m_orderid'];
+				$currency = strtoupper(mainConfiguration::getInstance()->get('system', 'default-currency'));
+				$order_curr = ($currency == 'RUR') ? 'RUB' : $currency;
+				$order_amount = number_format($this->order->getActualPrice(), 2, '.', '');
 				
-				$response = $_POST['m_orderid'] . "|success";
+				// проверка суммы и валюты
+			
+				if (getRequest('m_amount') != $order_amount)
+				{
+					$message .= " - Неправильная сумма\n";
+					$err = true;
+				}
+
+				if (getRequest('m_curr') != $order_curr)
+				{
+					$message .= " - Неправильная валюта\n";
+					$err = true;
+				}
+				
+				// проверка статуса
+				
+				if (!$err)
+				{
+					switch (getRequest('m_status'))
+					{
+						case 'success':
+							$this->order->setPaymentStatus('accepted');
+							$this->order->payment_document_num = getRequest('m_orderid');
+							break;
+							
+						default:
+							$message .= " - Cтатус платежа не является success\n";
+							$this->order->setPaymentStatus('declined');
+							$err = true;
+							break;
+					}
+				}
 			}
-			else
+			
+			if ($err)
 			{
 				$to = $this->object->payeer_emailerr;
-				$subject = "Ошибка оплаты";
-				$message = "Не удалось провести платёж через систему Payeer по следующим причинам:\n\n";
-				
-				if ($_POST["m_sign"] != $sign_hash)
-				{
-					$message .= " - Не совпадают цифровые подписи\n";
-				}
-				
-				if ($_POST['m_status'] != "success")
-				{
-					$message .= " - Cтатус платежа не является success\n";
-				}
-				
-				if (!$valid_ip)
-				{
-					$message .= " - ip-адрес сервера не является доверенным\n";
-					$message .= "   доверенные ip: " . $this->object->payeer_ipfilter . "\n";
-					$message .= "   ip текущего сервера: " . $_SERVER['REMOTE_ADDR'] . "\n";
-				}
-				
-				$message .= "\n" . $log_text;
-				$headers = "From: no-reply@" . $_SERVER['HTTP_SERVER'] . "\r\nContent-type: text/plain; charset=utf-8 \r\n";
-				mail($to, $subject, $message, $headers);
-		
-				$this->order->setPaymentStatus('declined');
-				$response = $_POST['m_orderid'] . "|error";
-			}
 
-			$buffer->push($response);
+				if (!empty($to))
+				{
+					$message = "Не удалось провести платёж через систему Payeer по следующим причинам:\n\n" . $message . "\n" . $log_text;
+					$headers = "From: no-reply@" . $_SERVER['HTTP_HOST'] . "\r\n" . 
+					"Content-type: text/plain; charset=utf-8 \r\n";
+					mail($to, 'Ошибка оплаты', $message, $headers);
+				}
+				
+				$buffer->push(getRequest('m_orderid') . '|error');
+			}
+			else
+			{
+				$buffer->push(getRequest('m_orderid') . '|success');
+			}
 		}
 		
 		$buffer->end();
+		return false;
 	}
 };
 ?>
