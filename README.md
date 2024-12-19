@@ -1,8 +1,8 @@
-UMI-CMS
+UMI.CMS
 ======
-Модуль оплаты Payeer
+Payment module Payeer
 
-Для установки модуля скачайте и распакуйте архив.
-Далее следуйте прилагаемой инструкции
+To install the module, download and unzip the archive.
+Then follow the attached instructions.
 
-Поддержка версии CMS UMI-CMS 2.9.x
+Support for UMI.CMS 2.9.x
